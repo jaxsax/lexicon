@@ -34,14 +34,27 @@ class Provider(BaseProvider):
         if self.domain_id is None:
             raise Exception("Domain not found")
 
+    def _get_ttl(self):
+        ttl = self._get_lexicon_option("ttl")
+        if not ttl:
+            return 0
+
+        # defaults specified in base
+        if ttl == 3600:
+            return 0
+
+        return ttl
+
     def _create_record(self, rtype, name, content):
         if not self._list_records(rtype, name, content):
             if name:
                 name = self._relative_name(name).lower()
 
+            data={"name": name, "type": rtype, "target": content, "ttl_sec": self._get_ttl()}
+
             self._post(
                 f"domains/{self.domain_id}/records",
-                data={"name": name, "type": rtype, "target": content, "ttl_sec": 0},
+                data=data,
             )
 
         return True
@@ -112,6 +125,7 @@ class Provider(BaseProvider):
                 "name": name.lower() if name else None,
                 "type": rtype if rtype else None,
                 "target": content if content else None,
+                "ttl_sec": self._get_ttl(),
             },
         )
 
